@@ -110,7 +110,7 @@ void UpSample(const Mat &src, Mat &dst)
             *(dstData + dstStep * (m+1) + dst.channels() * (n+1)) = center/4;  
   
         }  
-  
+
     }  
   
   
@@ -128,8 +128,8 @@ void UpSample(const Mat &src, Mat &dst)
     {  
         *(dstData + dstStep *(dst.rows-2) + dst.channels()*(k))=*(dstData + dstStep *(dst.rows-3) + dst.channels()*(k));  
         *(dstData + dstStep *(dst.rows-1) + dst.channels()*(k))=*(dstData + dstStep *(dst.rows-3) + dst.channels()*(k));  
-    }  
-  
+    }
+
 }  
   
 /************************************************************************************************************************* 
@@ -151,9 +151,7 @@ void GaussianSmooth(const Mat &src, Mat &dst, double sigma)
 *        在检测极值点前，对原始图像的高斯平滑以致图像丢失高频信息，所以Lowe建议在建立尺度空间前，首先对原始图像长宽扩展一倍， 
 *        以便保留原始图像的信息(特别是图像的高频信息，比如边缘，角点)，增加特征点的数量。 
 *函数功能: 
-*        这个函数的作用是用于创建高斯金字塔的-1层图像 
-*代码解读: 
-*        2017.2.24----陕西师范大学 
+*        这个函数的作用是用于创建高斯金字塔的-1层图像
 **************************************************************************************************************************/  
 void CreateInitSmoothGray(const Mat &src, Mat &dst, double sigma = SIGMA)  
 {  
@@ -162,7 +160,7 @@ void CreateInitSmoothGray(const Mat &src, Mat &dst, double sigma = SIGMA)
       
     ConvertToGray(src, gray);  
     UpSample(gray, up);                            //[3]图像的上采样  
-                                                   //[4]高斯金字塔的-1组的sigma的计算公式  
+                                                   //[4]高斯金字塔的-1组的sigma的计算公式
     double  sigma_init = sqrt(sigma * sigma - (INIT_SIGMA * 2) * (INIT_SIGMA * 2));//[1]-1层的sigma  
   
     GaussianSmooth(up, dst, sigma_init);           //[5]高斯平滑  
@@ -261,7 +259,7 @@ void DogPyramid(const std::vector<Mat>& gauss_pyr, std::vector<Mat>& dog_pyr, in
 *       模块四的第一步:3.4-空间极值点的初步检测(关键点的初步探查) 
 *功能说明: 
 *       1--在高斯差分函数之后，得到一系列的关键点的疑似点，我们需要对这些关键点的疑似点初步进行检测和筛选 
-*       2--此块代码所根据的原理为CSDN博客中的：3.5空间极值点的检测  
+*       2--空间极值点的检测
 **************************************************************************************************************************/  
 bool isExtremum(int x, int y, const std::vector<Mat>& dog_pyr, int index)  
 {  
@@ -310,13 +308,13 @@ bool isExtremum(int x, int y, const std::vector<Mat>& dog_pyr, int index)
 *模块说明： 
 *       模块四的第三步:4.2--消除边缘响应点 
 *功能说明: 
-*       1）一个定义不好的高斯差分算子的极值在横跨边缘的地方有较大的住主曲率，在垂直边缘的方向有较小的主曲率。 
+*       1）一个定义不好的高斯差分算子的极值在横跨边缘的地方有较大的主曲率，在垂直边缘的方向有较小的主曲率。
 *       2）DOG算子会产生较强的边缘响应，需要剔除不稳定的边缘响应点，获取特征点处的Hessian矩阵，主曲率通过一个2*2的Hessian矩 
 *          阵H求出 
 *       3）主曲率D和Hessian矩阵的特征值成正比，公式(r+1)*(r+1)/r的值在两个特征值相等时最小；这个值越大，说明两个特征值的比值 
 *          越大，即在某一个方向的梯度值越大，而在另一个方向的梯度值越小，而边缘恰恰就是这种情况。所以，为了剔除边缘响应点， 
 *          需要让该比值小于一定的阈值，因此，为了检测主曲率是否在某阈值r下，只需检测。CSDN论文中的公式(4-7成立)，成立，将关 
-*          键点保留，反之，剔除。 
+*          键点保留，反之，剔除。 escs
 **************************************************************************************************************************/  
 #define DAt(x, y) (*(data+(y)*step+(x)))   
 bool passEdgeResponse(int x, int y, const std::vector<Mat>& dog_pyr, int index, double r = RATIO)  
@@ -1046,7 +1044,8 @@ void DescriptorRepresentation(std::vector<Keypoint>& features, const std::vector
             delete[] hist[j];  
         }  
         delete[] hist;  
-    }  
+    }
+    cout<<"hist"<<hist;
 }  
   
 bool FeatureCmp(Keypoint& f1, Keypoint& f2)  
@@ -1062,7 +1061,7 @@ bool FeatureCmp(Keypoint& f1, Keypoint& f2)
 *        3---double sigma-----------------sigma值 
 *        4---int intervals----------------关键点所在的层数 
 ********************************************************************************************************************/  
-void Sift(const Mat &src, std::vector<Keypoint>& features, double sigma, int intervals)  
+void Sift(const Mat &src, std::vector<Keypoint>& features, double sigma, int intervals)
 {  
     std::cout<<"【Step_one】Create -1 octave gaussian pyramid image"<<std::endl;  
     cv::Mat          init_gray;  
@@ -1074,7 +1073,8 @@ void Sift(const Mat &src, std::vector<Keypoint>& features, double sigma, int int
   
     std::cout <<"【Step_two】Building gaussian pyramid ..."<<std::endl;                                                           
     std::vector<Mat> gauss_pyr;
-    GaussianPyramid(init_gray, gauss_pyr, octaves, intervals, sigma);              
+    GaussianPyramid(init_gray, gauss_pyr, octaves, intervals, sigma);
+
     write_pyr(gauss_pyr, "gausspyramid");  
       
   
@@ -1096,9 +1096,8 @@ void Sift(const Mat &src, std::vector<Keypoint>& features, double sigma, int int
   
     std::cout <<"【Step_five】CalculateScale..."<<std::endl;     
     CalculateScale(extrema, sigma, intervals);                                      
-    HalfFeatures(extrema);  
-  
-  
+    HalfFeatures(extrema);
+
   
     std::cout << "【Step_six】Orientation assignment..."<<std::endl;                                      
     OrientationAssignment(extrema, features, gauss_pyr);                           
@@ -1148,7 +1147,7 @@ void DrawSiftFeature(Mat& src, Keypoint& feat, CvScalar color)
 }  
 /******************************************************************************************************************* 
 *函数说明: 
-*         最大的模块3：画出SIFT特征点 
+*         最大的模块3：画出SIFT特征点 方向
 ********************************************************************************************************************/  
 void DrawSiftFeatures(Mat& src, std::vector<Keypoint>& features)  
 {  

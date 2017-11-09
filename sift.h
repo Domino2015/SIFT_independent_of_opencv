@@ -14,6 +14,7 @@ typedef double pixel_t;                             //【1】像素类型
 
 #define INIT_SIGMA 0.5                               //【2】初始sigma
 #define SIGMA 1.6
+
 #define INTERVALS 3                                  //【3】高斯金字塔中每组图像中有三层/张图片
 
 #define RATIO 10                                     //【4】半径r

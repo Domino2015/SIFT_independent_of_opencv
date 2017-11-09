@@ -14,11 +14,11 @@ int main()
     clock_t start,end;
     start = clock();
 
-    cv::Mat src = imread("../1.jpg");
+    cv::Mat src = imread("../lena.jpg");
 
     if(src.empty())
     {
-        cout << "1.jpg open error! "<<endl;
+        cout << "the image open error! "<<endl;
         getchar();
         return -1;
     }
@@ -28,9 +28,12 @@ int main()
     std::vector<Keypoint> features;
 
     Sift(src, features, 1.6);                           //【1】SIFT特征点检测和特征点描述
-    DrawKeyPoints(src, features);                       //【2】画出关键点(特征点)
+
+    //DrawKeyPoints(src, features);                       //【2】画出关键点(特征点)
+
     DrawSiftFeatures(src, features);                    //【3】画出SIFT特征点
-    write_features(features, "descriptor.txt");         //【4】将特征点写入文本
+
+    write_features(features, "../descriptor.txt");      //【4】将特征点写入文本
 
     end = clock();
     dur = (double)(end - start);
