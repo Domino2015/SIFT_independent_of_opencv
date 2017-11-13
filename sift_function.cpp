@@ -164,12 +164,14 @@ void CreateInitSmoothGray(const Mat &src, Mat &dst, double sigma = SIGMA)
     double  sigma_init = sqrt(sigma * sigma - (INIT_SIGMA * 2) * (INIT_SIGMA * 2));//[1]-1层的sigma  
   
     GaussianSmooth(up, dst, sigma_init);           //[5]高斯平滑  
-}  
+}
+
 /************************************************************************************************************************* 
 *模块说明： 
-*        模块二：3.3 图像高斯金字塔的构建 
+*        模块二：3.3 图像高斯金字塔的构建  8个*（3+3）层
+ *
 **************************************************************************************************************************/  
-void GaussianPyramid(const Mat &src, std::vector<Mat>&gauss_pyr, int octaves, int intervals = INTERVALS, double sigma = SIGMA)  
+void GaussianPyramid(const Mat &src, std::vector<Mat>&gauss_pyr, int octaves, int intervals = INTERVALS, double sigma = SIGMA)
 {  
     double *sigmas = new double[intervals+3];  
     double k = pow(2.0, 1.0/intervals);  
@@ -248,7 +250,8 @@ void DogPyramid(const std::vector<Mat>& gauss_pyr, std::vector<Mat>& dog_pyr, in
     {  
         for(int i = 1; i < intervals+3; i++)  
         {  
-            Mat mat;  
+            Mat mat;
+            //图像的差分
             Sub(gauss_pyr[o*(intervals+3)+i], gauss_pyr[o*(intervals+3)+i-1], mat);  
             dog_pyr.push_back(mat);  
         }  
@@ -574,7 +577,7 @@ void DetectionLocalExtrema(const std::vector<Mat>& dog_pyr, std::vector<Keypoint
         {  
             int index    = o*(intervals+2)+i;                              //[1]图片索引的定位  
             pixel_t *data = (pixel_t *)dog_pyr[index].data;                //[2]获取图片的矩阵体的首地址  
-            int step     = dog_pyr[index].step/sizeof(data[0]);           //[3]说明矩阵在存储空间中的存储是以线性空间的方式存放的  
+            int step = dog_pyr[index].step/sizeof(data[0]);           //[3]说明矩阵在存储空间中的存储是以线性空间的方式存放的
   
       
             for(int y = IMG_BORDER; y < dog_pyr[index].rows-IMG_BORDER; y++)  
@@ -679,9 +682,9 @@ double* CalculateOrientationHistogram(const Mat& gauss, int x, int y, int bins, 
     double  ori;                                                //[4]关键点的梯度方向  
     double  weight;  
   
-    int           bin;  
+    int bin;
     const double PI2   = 2.0*CV_PI;  
-    double        econs = -1.0/(2.0*sigma*sigma);  
+    double econs = -1.0/(2.0*sigma*sigma);
   
     for(int i = -radius; i <= radius; i++)  
     {  
@@ -800,7 +803,7 @@ void CalcOriFeatures(const Keypoint& keypoint, std::vector<Keypoint>& features, 
 *        2）对于在DOG金字塔中检测出来的关键点，采集其所在高斯金字塔图像3sigma邻域窗口内像素的梯度和方向梯度和方向特征。 
 *        3）梯度的模和方向如下所示: 
 *        4) 在完成关键点的梯度计算后，使用直方图统计邻域内像素的梯度和方向。梯度直方图将0~360度的方向范围分为36个柱，其中每柱10度， 
-*           如图5.1所示，直方图的峰值方向代表了关键点的主方向 
+*           直方图的峰值方向代表了关键点的主方向
 *********************************************************************************************************************************/  
 void OrientationAssignment(std::vector<Keypoint>& extrema, std::vector<Keypoint>& features, const std::vector<Mat>& gauss_pyr)  
 {  
@@ -810,14 +813,15 @@ void OrientationAssignment(std::vector<Keypoint>& extrema, std::vector<Keypoint>
     for(int i = 0; i < n; i++)  
     {  
   
-        hist = CalculateOrientationHistogram(gauss_pyr[extrema[i].octave*(INTERVALS+3)+extrema[i].interval],  
+        hist = CalculateOrientationHistogram(gauss_pyr[extrema[i].octave*(INTERVALS+3)+extrema[i].interval],
             extrema[i].x, extrema[i].y, ORI_HIST_BINS, cvRound(ORI_WINDOW_RADIUS*extrema[i].octave_scale),   
             ORI_SIGMA_TIMES*extrema[i].octave_scale);                             //[1]计算梯度的方向直方图  
-      
+
         for(int j = 0; j < ORI_SMOOTH_TIMES; j++)  
-            GaussSmoothOriHist(hist, ORI_HIST_BINS);                              //[2]对方向直方图进行高斯平滑  
+            GaussSmoothOriHist(hist, ORI_HIST_BINS);                              //[2]对方向直方图进行高斯平滑
+
         double highest_peak = DominantDirection(hist, ORI_HIST_BINS);            //[3]求取方向直方图中的峰值  
-                                                                                  //[4]计算更加精确的关键点主方向  
+                                                                                //[4]计算更加精确的关键点主方向
         CalcOriFeatures(extrema[i], features, hist, ORI_HIST_BINS, highest_peak*ORI_PEAK_RATIO);  
   
         delete[] hist;  
@@ -1014,7 +1018,7 @@ void HistToDescriptor(double ***hist, int width, int bins, Keypoint& feature)
 *Lowe论文： 
 *    Lowe建议描述子使用在关键点尺度空间内4*4的窗口中计算的8个方向的梯度信息，共4*4*8=128维向量来表征。具体的步骤如下所示: 
 *        1)确定计算描述子所需的图像区域 
-*        2）将坐标轴旋转为关键点的方向，以确保旋转不变性，如CSDN博文中的图6.2所示；旋转后邻域采样点的新坐标可以通过公式(6-2)计算 
+*        2）将坐标轴旋转为关键点的方向，以确保旋转不变性；旋转后邻域采样点的新坐标可以通过公式(6-2)计算
 *        3）将邻域内的采样点分配到对应的子区域，将子区域内的梯度值分配到8个方向上，计算其权值 
 *        4）插值计算每个种子点八个方向的梯度 
 *        5）如上统计的4*4*8=128个梯度信息即为该关键点的特征向量。特征向量形成后，为了去除光照变化的影响，需要对它们进行归一化处理， 
@@ -1045,7 +1049,6 @@ void DescriptorRepresentation(std::vector<Keypoint>& features, const std::vector
         }  
         delete[] hist;  
     }
-    cout<<"hist"<<hist;
 }  
   
 bool FeatureCmp(Keypoint& f1, Keypoint& f2)  
@@ -1064,9 +1067,13 @@ bool FeatureCmp(Keypoint& f1, Keypoint& f2)
 void Sift(const Mat &src, std::vector<Keypoint>& features, double sigma, int intervals)
 {  
     std::cout<<"【Step_one】Create -1 octave gaussian pyramid image"<<std::endl;  
-    cv::Mat          init_gray;  
-    CreateInitSmoothGray(src, init_gray, sigma);                                     
-    int octaves = log((double)min(init_gray.rows, init_gray.cols))/log(2.0) - 2;             //计算高斯金字塔的层数  
+    cv::Mat init_gray;
+    //创建初始灰度图像
+    CreateInitSmoothGray(src, init_gray, sigma);
+
+    //计算产生几组（Octave）图像
+    int octaves = log((double)min(init_gray.rows, init_gray.cols))/log(2.0) - 2;  //计算高斯金字塔的
+
     std::cout<<"【1】The height and width of init_gray_img = "<<init_gray.rows<<"*"<<init_gray.cols<<std::endl;  
     std::cout<<"【2】The octaves of the gauss pyramid      = "<<octaves<<std::endl;  
   
@@ -1095,7 +1102,8 @@ void Sift(const Mat &src, std::vector<Keypoint>& features, double sigma, int int
   
   
     std::cout <<"【Step_five】CalculateScale..."<<std::endl;     
-    CalculateScale(extrema, sigma, intervals);                                      
+    CalculateScale(extrema, sigma, intervals);
+
     HalfFeatures(extrema);
 
   
@@ -1208,12 +1216,12 @@ void writecv64f(const char* filename, const Mat& mat)
     cv64f_to_cv8U(mat, dst);  
     imwrite(filename, dst);  
 }  
-  
+//创建高斯金字塔每张图像，临时文件
 void write_pyr(const std::vector<Mat>& pyr, const char* dir)  
 {  
     for(int i = 0; i < pyr.size(); i++)  
     {  
-                writecv64f(GetFileName(dir, i), pyr[i]);  
+        writecv64f(GetFileName(dir, i), pyr[i]);
     }  
 }  
   
